@@ -32,13 +32,41 @@ class ViewController: UIViewController {
     // This method avoids blocking by creating a new queue that runs
     // in the background, without blocking the UI.
     @IBAction func simpleAsynchronousDownload(_ sender: UIBarButtonItem) {
+        guard let url = URL(string: BigImages.shark.rawValue) else { return }
         
+        let downloadQueue = DispatchQueue(label: "download", attributes: [])
+        
+        downloadQueue.async {
+            if let imgDate = try? Data(contentsOf: url) {
+                let image = UIImage(data: imgDate)
+                
+                DispatchQueue.main.async(execute: {
+                    self.photoView.image = image
+                })
+            }
+        }
     }
     
     // This code downloads the huge image in a global queue and uses a completion
     // closure.
     @IBAction func asynchronousDownload(_ sender: UIBarButtonItem) {
+        withBigImage { (image) in
+            self.photoView.image = image
+        }
+    }
+    
+    func withBigImage(completionHandler handler: @escaping (_ image: UIImage) -> Void) {
+        guard let url = URL(string: BigImages.whale.rawValue) else { return }
         
+        DispatchQueue.global(qos: DispatchQoS.QoSClass.userInitiated).async {
+            if let imgDate = try? Data(contentsOf: url),
+                let image = UIImage(data: imgDate) {
+                
+                DispatchQueue.main.async(execute: {
+                    handler(image)
+                })
+            }
+        }
     }
     
     // Changes the alpha value (transparency of the image). It's only purpose is to show if the
@@ -46,13 +74,13 @@ class ViewController: UIViewController {
     @IBAction func setTransparencyOfImage(_ sender: UISlider) {
         photoView.alpha = CGFloat(sender.value)
     }
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
     }
-
-
+    
+    
 }
 
 // MARK: - BigImages: String
